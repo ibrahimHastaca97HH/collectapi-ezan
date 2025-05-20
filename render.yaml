@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: collectapi-ezan
+    env: python
+    buildCommand: ""
+    startCommand: ./start.sh
+    envVars:
+      - key: COLLECTAPI_KEY
+        value: your_real_collectapi_token
