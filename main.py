@@ -1,35 +1,27 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 import http.client
+import urllib.parse
 import os
-from datetime import datetime
 
 app = Flask(__name__)
 
-# Ortam değişkeninden API anahtarını al (Render gibi ortamlarda güvenli kullanım)
-API_KEY = os.getenv("COLLECTAPI_KEY", "your_token")  # Buraya kendi API key'ini gir ya da ortam değişkeni kullan
+# .env dosyasından ya da doğrudan yazılmış API Key
+API_KEY = os.getenv("COLLECTAPI_KEY", "your_token")
+
 
 @app.route("/")
 def home():
     return "API is working!"
 
-@app.route("/pray/<city>", methods=["GET"])
-def get_example_prayer_times(city):
-    # Örnek JSON cevabı - statik veri
-    example = {
-        "city": city.title(),
-        "date": datetime.today().strftime('%Y-%m-%d'),
-        "imsak": "04:05",
-        "gunes": "05:35",
-        "ogle": "12:45",
-        "ikindi": "16:20",
-        "aksam": "19:45",
-        "yatsi": "21:10"
-    }
-    return jsonify(example)
 
-@app.route('/api/collectapi', methods=['GET'])
-def get_prayer_times_from_collectapi():
-    city = request.args.get('city', 'istanbul')
+@app.route("/pray/single", methods=["GET"])
+def get_single_prayer_time():
+    city = request.args.get("city", "istanbul")
+    vakit = request.args.get("vakit", "Yatsı")  # İmsak, Güneş, Öğle, İkindi, Akşam, Yatsı
+
+    # Şehir ve vakit adlarını URL uyumlu hale getiriyoruz
+    encoded_city = urllib.parse.quote(city)
+    encoded_vakit = urllib.parse.quote(vakit)
 
     conn = http.client.HTTPSConnection("api.collectapi.com")
     headers = {
@@ -38,20 +30,19 @@ def get_prayer_times_from_collectapi():
     }
 
     try:
-        conn.request("GET", f"/pray/all?data.city={city}", headers=headers)
+        conn.request("GET", f"/pray/single?ezan={encoded_vakit}&data.city={encoded_city}", headers=headers)
         res = conn.getresponse()
-        data = res.read()
+        data = res.read().decode("utf-8")
         return jsonify({
             "status": True,
             "city": city.title(),
-            "source": "collectapi.com",
-            "data": data.decode("utf-8")
+            "vakit": vakit.title(),
+            "data": data
         })
     except Exception as e:
-        return jsonify({
-            "status": False,
-            "error": str(e)
-        })
+        return jsonify({"status": False, "error": str(e)})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+
