@@ -3,7 +3,7 @@ services:
     name: collectapi-ezan
     env: python
     buildCommand: ""
-    startCommand: ./start.sh
+    startCommand: gunicorn main:app --bind 0.0.0.0:5000
     envVars:
       - key: COLLECTAPI_KEY
         value: your_real_collectapi_token
